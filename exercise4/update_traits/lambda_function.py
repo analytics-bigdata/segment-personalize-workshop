@@ -33,8 +33,23 @@ def api_post(url, key, payload):
 def get_user_traits(user_id):
     # Calls Profile API to get the user profile traits by their userId
     formatted_url = "{:s}/{:s}/collections/users/profiles/user_id:{:s}/traits?limit=100".format(personas_endpoint_url, personas_workspace_id, user_id)
-    jData = api_get(formatted_url, personas_api_key)
-    return jData['traits'] # return the traits dict
+    try:
+        jData = api_get(formatted_url, personas_api_key)
+        return jData['traits'] # return the traits dict
+    except HTTPError as error:
+        status = error.response.status_code
+        if status == 404
+            # This is not the user you are looking for...most likely
+            print('Personas: The user you are looking for was not found.')
+        else if status == 400
+            print('Personas: Check your request formatting - it was probably malformed.')
+        else if status == 401
+            print('Personas: Access denied.  Check your API keys.')
+        else if status == 429
+            print('Personas: Too many requests.  You are being throttled.')
+        else if status >= 500
+            print('Personas: Something went wrong with Personas (500 Error).')
+        return None
 
 def set_user_traits(user_id, traits):
     # Sends an identify call to Personas to update a user's traits
@@ -105,16 +120,14 @@ def lambda_handler(event, context):
 
             userTraits = get_user_traits(userId)
 
-            print(userTraits)
-
-            if 'purchased_products' in userTraits:
-                # Remove already purchased products from the recommended traits
-                recommended_items = list(set(userTraits['purchased_products']).symmetric_difference(recommended_items))
-
-            print(recommended_items)
-
-            # Set the updated recommendations on the user's profile
-            set_user_traits(userId, { 'recommended_products' : recommended_items })
+            if userTraits != None:
+                print(userTraits)
+                if 'purchased_products' in userTraits:
+                    # Remove already purchased products from the recommended traits
+                    recommended_items = list(set(userTraits['purchased_products']).symmetric_difference(recommended_items))
+                print(recommended_items)
+                # Set the updated recommendations on the user's profile
+                set_user_traits(userId, { 'recommended_products' : recommended_items })
 
         else:
             print("Segment event does not contain required fields (anonymousId, sku, and userId)")
