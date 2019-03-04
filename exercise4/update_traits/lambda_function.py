@@ -58,22 +58,21 @@ def set_user_traits(user_id, traits):
     api_post(formatted_url, connections_source_api_key, message)
 
 def lambda_handler(event, context):
-    """
-    """
-
     if not 'personalize_tracking_id' in os.environ:
         raise Exception('personalize_tracking_id not configured as environment variable')
-
     if not 'personalize_campaign_arn' in os.environ:
         raise Exception('personalize_campaign_arn not configured as environment variable')
 
     # Initialize Personalize API (this is temporarily needed until Personalize is fully
+    # available in the boto APIs
     api_helper.init()
 
     print("event: " + json.dumps(event))
 
     # Allow Personalize API to be overriden via environment variables. Optional.
-    runtime_params = { 'service_name': 'personalize-runtime', 'region_name': 'us-east-1', 'endpoint_url': 'https://personalize-runtime.us-east-1.amazonaws.com' }
+    runtime_params = { 'service_name': 'personalize-runtime',
+                       'region_name': 'us-east-1',
+                       'endpoint_url': 'https://personalize-runtime.us-east-1.amazonaws.com' }
     if 'region_name' in os.environ:
         runtime_params['region_name'] = os.environ['region_name']
     if 'endpoint_url' in os.environ:
@@ -83,51 +82,73 @@ def lambda_handler(event, context):
     personalize_events = boto3.client('personalize-events')
 
     for record in event['Records']:
-        print("Payload: " + json.dumps(record))
-        segment_event = json.loads(base64.b64decode(record['kinesis']['data']).decode('utf-8'))
-        print("Segment event: " + json.dumps(segment_event))
+        try:
+            print("Payload: " + json.dumps(record))
+            segment_event = json.loads(base64.b64decode(record['kinesis']['data']).decode('utf-8'))
+            print("Segment event: " + json.dumps(segment_event))
 
-        # For the Personalize workshop, we really only care about these events
-        supported_events = ['Product Added', 'Order Completed', 'Product Clicked']
-        if ('anonymousId' in segment_event and
-            'userId' in segment_event and
-            'properties' in segment_event and
-            'sku' in segment_event["properties"] and
-            'event' in segment_event and
-            segment_event['event'] in supported_events):
-            print("Calling Personalize.Record()")
-            userId = segment_event['userId']
-            properties = { "id": segment_event["properties"]["sku"] }
-            personalize_events.put_events(
-                trackingId = os.environ['personalize_tracking_id'],
-                userId = userId,
-                sessionId = segment_event['anonymousId'],
-                eventList = [
-                    {
-                        "eventId": segment_event['messageId'],
-                        "sentAt": int(dp.parse(segment_event['timestamp']).strftime('%s')),
-                        "eventType": segment_event['event'],
-                        "properties": json.dumps(properties)
-                    }
-                ]
-            )
+            # For the Personalize workshop, we really only care about these events
+            supported_events = ['Product Added',
+                                'Order Completed',
+                                'Product Clicked']
 
-            params = { 'campaignArn': os.environ['personalize_campaign_arn'], 'userId': userId }
+            if ('anonymousId' in segment_event and
+                'userId' in segment_event and
+                'properties' in segment_event and
+                'sku' in segment_event["properties"] and
+                'event' in segment_event and
+                segment_event['event'] in supported_events):
+                print("Calling Personalize.Record()")
+                userId = segment_event['userId']
+                properties = { "id": segment_event["properties"]["sku"] }
 
-            response = personalize_runtime.get_recommendations(**params)
+                # TODO:  Check for errors here
 
-            recommended_items = [d['itemId'] for d in response['itemList'] if 'itemId' in d]
+                response = personalize_events.put_events(
+                    trackingId = os.environ['personalize_tracking_id'],
+                    userId = userId,
+                    sessionId = segment_event['anonymousId'],
+                    eventList = [
+                        {
+                            "eventId": segment_event['messageId'],
+                            "sentAt": int(dp.parse(segment_event['timestamp']).strftime('%s')),
+                            "eventType": segment_event['event'],
+                            "properties": json.dumps(properties)
+                        }
+                    ]
+                )
 
-            userTraits = get_user_traits(userId)
+                if response.
 
-            if userTraits != None:
-                print(userTraits)
-                if 'purchased_products' in userTraits:
-                    # Remove already purchased products from the recommended traits
-                    recommended_items = list(set(userTraits['purchased_products']).symmetric_difference(recommended_items))
-                print(recommended_items)
-                # Set the updated recommendations on the user's profile
-                set_user_traits(userId, { 'recommended_products' : recommended_items })
+                params = { 'campaignArn': os.environ['personalize_campaign_arn'], 'userId': userId }
 
-        else:
-            print("Segment event does not contain required fields (anonymousId, sku, and userId)")
+                # TODO: Check for errors here as well
+
+                response = personalize_runtime.get_recommendations(**params)
+
+                recommended_items = [d['itemId'] for d in response['itemList'] if 'itemId' in d]
+
+                # TODO: AND HERE TOO
+                userTraits = get_user_traits(userId)
+
+                if userTraits != None:
+                    print(userTraits)
+                    if 'purchased_products' in userTraits:
+                        # Remove already purchased products from the recommended traits
+                        recommended_items = list(set(userTraits['purchased_products']).symmetric_difference(recommended_items))
+                    print(recommended_items)
+                    # Set the updated recommendations on the user's profile
+                    set_user_traits(userId, { 'recommended_products' : recommended_items })
+
+            else:
+                print("Segment event does not contain required fields (anonymousId, sku, and userId)")
+        except ValueError as ve:
+            # Kinesis triggers will attempt to re-process this message so this
+            # needs to log an error and return sucessfully
+            print("Invalid JSON format received, check your event sources.")
+        except KeyError as ke:
+            print("Invalid configuration for Personalize, most likely.")
+            context.done()
+        except ClientError as ce:
+            print("ClientError - most likely a boto3 issue.")
+            print(ce.response.['Error']['Code'])
