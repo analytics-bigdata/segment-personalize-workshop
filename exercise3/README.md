@@ -6,11 +6,9 @@ After you create a campaign using Amazon Personalize, you are able to get two di
 
 For search-personalization recipes, the PersonalizeRanking API re-ranks a list of recommended items based on a specified query.
 
-In this workshop we have been focused on building a user-personalization solution, so far trained on historical event data from Segment. In this exercise we will demonstrate how you can integrate recommendations from Personalize into your applications using a REST API. Once our API is in place, we will enhance it to demonstrate how traits on Segment customer profiles, such as recent purchases, can be used to filter recommendations from Personalize.
-
 ### What You'll Be Building
 
-We will start by building an API Gateway endpoint that calls a Lambda function to fetch recommendations from Personalize. This example will show how to build a basic API endpoint to call Personalize directly from your applications for use cases where you will want to directly get recommendations. Then we will enhance the Lambda function to integrate calls to Segment Personas.
+In this workshop we have been focused on building a user-personalization solution, so far trained on historical event data from Segment. In this exercise we will demonstrate how you can integrate recommendations from Personalize into your applications using a REST API. We will build an API Gateway endpoint that calls a Lambda function to fetch recommendations from Personalize. This example will show how to build a basic API endpoint to call Personalize directly from your applications for use cases where you will want to directly integrate recommendations.
 
 ### Exercise Preparation
 
@@ -112,57 +110,6 @@ This will send a request through API Gateway which will call our Lambda function
 
 ![API Gateway Test](images/APIGW_TestGetResults.png)
 
-As you can see, the GetRecommendations endpoint for Personalize returns itemIds for recommended items for the specified user. You would then use these itemIds to retrieve meta infromation from your application such as item names, descriptions, and images to build a user interface for the end-user.
-
-This API framework and function also provides the foundation for enhancing our function to filter recommendations based on recent purchase history for the user/customer in Segment.
-
-## Part 2 - Filtering Recommendations using Customer Profile Traits
-
-For this final step, you will configure Personas real-time computed traits, and then we will update our Lambda function to access those traits to filter recent purchases from the recommendations before they are returned to the caller.  
-
-This example will allow Personas to update a user trait for each user that completes an order via the `Order Completed` event.  So let’s set up that trait first.
-
-Click the Personas orb.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194485012_image.png)
-
-Then select ‘Computed Traits’.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194585193_image.png)
-
-Then click ‘Create Computed Trait’.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194594333_image.png)
-
-Select ‘Unique List.’  This will allow us to compute a list of unique skus from an Order Completed event.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194599821_image.png)
-
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194605292_image.png)
-
-Select the ‘Order Completed’ event in the ‘Select Event..’ dropdown
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194610863_image.png)
-
-Then, select the ‘sku’ event property, and then click the ‘Preview’ button.  
-
-Do not select a Time Frame for this trait!  Doing so will disable real-time computation.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194620736_image.png)
-
-This will generate a list of users that have completed orders, and their traits.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194625799_image.png)
-
-Skip this next step by clicking ‘Review & Create’
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194631795_image.png)
-
-On this screen, name your trait ‘purchased_products’. This will be used in the Lambda function, so it must match this string or you have to update the Lambda code. Click ‘Create Computed Trait’.
-
-![](https://d2mxuefqeaa7sj.cloudfront.net/s_12A58A92405C56E8DE968E6DE63B3BFED1BB822EB344A5A338801C8B717BCDEB_1551194636961_image.png)
-
-This trait will now be computed for all users that interact with your Segment instance.
+As you can see, the GetRecommendations endpoint for Personalize returns itemIds for recommended items for the specified user. Typically you would then use these itemIds to retrieve meta infromation such as item names, descriptions, and images from, say, a database or API in your application.
 
 In the final [exercise](../exercise4) we will bring everything together and learn how to integrate recommendations from Personalize with your customer profiles in Segment. This allows you to activate recommendations across other integrations in your Segment account.
