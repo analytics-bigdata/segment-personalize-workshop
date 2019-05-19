@@ -129,7 +129,7 @@ After clicking the "Finish" (or "Start import") button at the bottom of the page
 
 Once our event CSV is finished importing into a user-item interaction dataset, we can create a Personalize Solution. This is where the ML model is created. From the Dashboard page for the dataset group we created above, click the "Start" button in the "Create solutions" column.
 
-> We are skipping the event ingestion step for now and will come back to it in the [next exercise](../exercise3).
+> We are skipping the event ingestion step for now and will come back to it in [exercise 4](../exercise4).
 
 ![Create Personalize Solution](images/PersonalizeCreateSolution.png)
 
