@@ -197,7 +197,7 @@ Back on the Segment Amazon S3 destination settings page, paste the bucket name i
 
 Detailed instructions for configuring an S3 destination can be found on Segment's [documentation site](https://segment.com/docs/destinations/amazon-s3/).
 
-As mentioned above, we won't be testing actually pushing data through the S3 destination in this workshop due to time limitations. Instead, we will upload a dataset in the next part.
+As mentioned above, we won't be testing actually pushing data through the S3 destination in this workshop due to time limitations. Instead, we will use raw data already collected in an S3 bucket.
 
 ## Part 5 - Send Test Data Into Your Segment Workspace
 
@@ -209,7 +209,7 @@ Because events are synchronized from Segment to S3 on a batch basis, we will als
 
 You will need some data to be populated in Segment however, since this will allow you to create recommendations based on (simulated) user activity later on.
 
-This part can be choose your own adventure, though we strongly recommend using the Clooud9 option to avoid Python package hell.  Let’s start with Cloud9.
+This part can be choose your own adventure, though we strongly recommend using the AWS Cloud9 option to avoid Python package hell.  Let’s start with Cloud9.
 
 
 1. Go to your AWS Console.
@@ -290,7 +290,7 @@ Keep this window or tab open, or at least save the URL to your instance.  You wi
 19. You will need to run the following commands in the terminal window (you are in Ubuntu, right?)
 
 ```
-git clone git@github.com:james-jory/segment-personalize-workshop.git
+git clone https://github.com/james-jory/segment-personalize-workshop.git
 pip install python-dateutil --upgrade
 pip install analytics-python
 ```
